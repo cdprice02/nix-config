@@ -1,0 +1,127 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  # ── Evaluate the flake and output profile name lists for downstream matrices ──
+  get-profiles:
+    runs-on: ubuntu-latest
+    outputs:
+      linux:  ${{ steps.list.outputs.linux }}
+      darwin: ${{ steps.list.outputs.darwin }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+      - uses: DeterminateSystems/nix-installer-action@v22
+      - uses: DeterminateSystems/magic-nix-cache-action@v14
+      - id: list
+        run: |
+          mkdir -p "$HOME/.nix-config" && cp user.nix.example "$HOME/.nix-config/user.nix"
+          LINUX=$(nix eval .#homeConfigurations --apply builtins.attrNames --json --impure)
+          echo "linux=$LINUX" >> "$GITHUB_OUTPUT"
+          DARWIN=$(nix eval .#darwinConfigurations --apply builtins.attrNames --json --impure \
+            | jq -c '[.[] | {config: ., runner: (if endswith("-aarch64") then "macos-14" else "macos-13" end)}]')
+          echo "darwin=$DARWIN" >> "$GITHUB_OUTPUT"
+
+  # ── nix flake check + validate the example identity file ─────────────────────
+  flake-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+      - uses: DeterminateSystems/nix-installer-action@v22
+      - uses: DeterminateSystems/magic-nix-cache-action@v14
+      - run: mkdir -p "$HOME/.nix-config" && cp user.nix.example "$HOME/.nix-config/user.nix"
+      - run: nix flake check --impure
+      - run: nix eval --file user.nix.example
+
+  # ── Full activation-package build for every Linux profile (including aarch64) ─
+  build-linux:
+    needs: get-profiles
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: ${{ fromJSON(needs.get-profiles.outputs.linux) }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+      - uses: docker/setup-qemu-action@v4
+        with:
+          platforms: arm64
+      - uses: DeterminateSystems/nix-installer-action@v22
+        with:
+          extra-conf: |
+            extra-platforms = aarch64-linux
+      - uses: DeterminateSystems/magic-nix-cache-action@v14
+      - run: mkdir -p "$HOME/.nix-config" && cp user.nix.example "$HOME/.nix-config/user.nix"
+      - run: nix build .#homeConfigurations.${{ matrix.profile }}.activationPackage --impure
+
+  # ── Full system build for every Darwin profile ────────────────────────────────
+  build-darwin:
+    needs: get-profiles
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.get-profiles.outputs.darwin) }}
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+      - uses: DeterminateSystems/nix-installer-action@v22
+      - uses: DeterminateSystems/magic-nix-cache-action@v14
+      - run: mkdir -p "$HOME/.nix-config" && cp user.nix.example "$HOME/.nix-config/user.nix"
+      - run: nix build .#darwinConfigurations.${{ matrix.config }}.system --impure
+
+  # ── Lint: each tool is a separate job so failures are individually named ──────
+  lint-alejandra:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: DeterminateSystems/nix-installer-action@v22
+      - uses: DeterminateSystems/magic-nix-cache-action@v14
+      - run: nix shell nixpkgs#alejandra -c alejandra --check .
+
+  lint-statix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: DeterminateSystems/nix-installer-action@v22
+      - uses: DeterminateSystems/magic-nix-cache-action@v14
+      - run: nix shell nixpkgs#statix -c statix check
+
+  lint-deadnix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: DeterminateSystems/nix-installer-action@v22
+      - uses: DeterminateSystems/magic-nix-cache-action@v14
+      - run: nix shell nixpkgs#deadnix -c deadnix --fail .
+
+  lint-markdownlint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: DeterminateSystems/nix-installer-action@v22
+      - uses: DeterminateSystems/magic-nix-cache-action@v14
+      - run: nix shell nixpkgs#markdownlint-cli -c markdownlint 'docs/**/*.md'
+
+  # ── Secret scanning on every push ─────────────────────────────────────────────
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
