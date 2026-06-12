@@ -22,7 +22,7 @@ jobs:
       - uses: DeterminateSystems/magic-nix-cache-action@v14
       - id: list
         run: |
-          cp user.nix.example user.nix
+          mkdir -p "$HOME/.nix-config" && cp user.nix.example "$HOME/.nix-config/user.nix"
           LINUX=$(nix eval .#homeConfigurations --apply builtins.attrNames --json --impure)
           echo "linux=$LINUX" >> "$GITHUB_OUTPUT"
           DARWIN=$(nix eval .#darwinConfigurations --apply builtins.attrNames --json --impure \
@@ -38,7 +38,7 @@ jobs:
           submodules: recursive
       - uses: DeterminateSystems/nix-installer-action@v22
       - uses: DeterminateSystems/magic-nix-cache-action@v14
-      - run: cp user.nix.example user.nix
+      - run: mkdir -p "$HOME/.nix-config" && cp user.nix.example "$HOME/.nix-config/user.nix"
       - run: nix flake check --impure
       - run: nix eval --file user.nix.example
 
@@ -62,7 +62,7 @@ jobs:
           extra-conf: |
             extra-platforms = aarch64-linux
       - uses: DeterminateSystems/magic-nix-cache-action@v14
-      - run: cp user.nix.example user.nix
+      - run: mkdir -p "$HOME/.nix-config" && cp user.nix.example "$HOME/.nix-config/user.nix"
       - run: nix build .#homeConfigurations.${{ matrix.profile }}.activationPackage --impure
 
   # ── Full system build for every Darwin profile ────────────────────────────────
@@ -79,7 +79,7 @@ jobs:
           submodules: recursive
       - uses: DeterminateSystems/nix-installer-action@v22
       - uses: DeterminateSystems/magic-nix-cache-action@v14
-      - run: cp user.nix.example user.nix
+      - run: mkdir -p "$HOME/.nix-config" && cp user.nix.example "$HOME/.nix-config/user.nix"
       - run: nix build .#darwinConfigurations.${{ matrix.config }}.system --impure
 
   # ── Lint: each tool is a separate job so failures are individually named ──────
