@@ -50,6 +50,7 @@ in
 
     # Dev tools
     gh
+    pre-commit
     tmux
     qmkPackage
   ];
