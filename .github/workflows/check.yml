@@ -72,11 +72,8 @@ jobs:
   # ── Full system build for every Darwin profile ────────────────────────────────
   # Uses GitHub-hosted macOS runners (free for public repos, no minute cap).
   # macos-14 = Apple Silicon (aarch64), macos-13 = Intel (x86_64).
-  # Restricted to same-repo events: fork PRs cannot run code on macOS runners
-  # (GitHub security recommendation for any runner used with untrusted code).
   build-darwin:
     needs: get-profiles
-    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
     strategy:
       fail-fast: false
       matrix:
