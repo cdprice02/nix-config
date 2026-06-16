@@ -7,8 +7,10 @@
     obsidian
   ];
 
-  # Raw TOML for Cmd+arrow bindings. Written via home.file.text so the
-  # \uXXXX sequences are literal text in the TOML file (valid TOML Unicode escapes).
+  # Raw TOML for Cmd/Option+arrow bindings. The chars values are literal
+  # control-character bytes (Ctrl-A, Ctrl-E, Ctrl-U, ESC-b, ESC-f) — Nix
+  # heredoc strings do not support \u escapes, so the bytes are embedded
+  # directly. Alacritty reads chars as a raw byte sequence, not TOML escapes.
   home.file.".config/alacritty/keybindings.toml".text = ''
     [[keyboard.bindings]]
     key = "Left"

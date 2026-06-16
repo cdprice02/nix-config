@@ -228,10 +228,7 @@
     };
 
     # ── nixosConfigurations ─────────────────────────────────────────────────
-    # Uncomment and add hardware-configuration.nix when setting up a real NixOS machine.
-    # nixosConfigurations = {
-    #   "personal-nixos" = mkNixosConfig { context = "personal"; system = "x86_64-linux"; };
-    #   "work-nixos"     = mkNixosConfig { context = "work";     system = "x86_64-linux"; };
-    # };
+    # NixOS support is tracked in issue #5. Requires hardware-configuration.nix
+    # and a mkNixosConfig helper (analogous to mkDarwinConfig above).
   };
 }
