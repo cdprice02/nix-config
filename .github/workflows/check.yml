@@ -28,7 +28,7 @@ jobs:
       - uses: nix-community/cache-nix-action@v7
         with:
           primary-key: nix-linux-eval-${{ hashFiles('flake.lock', '**/*.nix') }}
-          restore-keys: nix-linux-eval-
+          restore-prefixes-first-match: nix-linux-eval-
           gc-max-store-size-linux: 2147483648
       - id: list
         run: |
@@ -50,7 +50,7 @@ jobs:
       - uses: nix-community/cache-nix-action@v7
         with:
           primary-key: nix-linux-eval-${{ hashFiles('flake.lock', '**/*.nix') }}
-          restore-keys: nix-linux-eval-
+          restore-prefixes-first-match: nix-linux-eval-
           gc-max-store-size-linux: 2147483648
       - run: mkdir -p "$HOME/.nix-config" && cp user.nix.example "$HOME/.nix-config/user.nix"
       - run: nix flake check --impure
@@ -80,7 +80,7 @@ jobs:
       - uses: nix-community/cache-nix-action@v7
         with:
           primary-key: nix-linux-build-${{ hashFiles('flake.lock', '**/*.nix') }}
-          restore-keys: nix-linux-build-
+          restore-prefixes-first-match: nix-linux-build-
           gc-max-store-size-linux: 4294967296
       - run: mkdir -p "$HOME/.nix-config" && cp user.nix.example "$HOME/.nix-config/user.nix"
       - run: nix build .#homeConfigurations.${{ matrix.profile }}.activationPackage --impure
@@ -107,7 +107,7 @@ jobs:
       - uses: nix-community/cache-nix-action@v7
         with:
           primary-key: nix-macos-build-${{ hashFiles('flake.lock', '**/*.nix') }}
-          restore-keys: nix-macos-build-
+          restore-prefixes-first-match: nix-macos-build-
           gc-max-store-size-macos: 4294967296
       - run: mkdir -p "$HOME/.nix-config" && cp user.nix.example "$HOME/.nix-config/user.nix"
       - run: nix build .#darwinConfigurations.${{ matrix.config }}.system --impure
@@ -123,7 +123,7 @@ jobs:
       - uses: nix-community/cache-nix-action@v7
         with:
           primary-key: nix-linux-lint-${{ hashFiles('flake.lock') }}
-          restore-keys: nix-linux-lint-
+          restore-prefixes-first-match: nix-linux-lint-
           gc-max-store-size-linux: 1073741824
       - run: nix shell nixpkgs#alejandra -c alejandra --check .
 
@@ -135,7 +135,7 @@ jobs:
       - uses: nix-community/cache-nix-action@v7
         with:
           primary-key: nix-linux-lint-${{ hashFiles('flake.lock') }}
-          restore-keys: nix-linux-lint-
+          restore-prefixes-first-match: nix-linux-lint-
           gc-max-store-size-linux: 1073741824
       - run: nix shell nixpkgs#statix -c statix check
 
@@ -147,7 +147,7 @@ jobs:
       - uses: nix-community/cache-nix-action@v7
         with:
           primary-key: nix-linux-lint-${{ hashFiles('flake.lock') }}
-          restore-keys: nix-linux-lint-
+          restore-prefixes-first-match: nix-linux-lint-
           gc-max-store-size-linux: 1073741824
       - run: nix shell nixpkgs#deadnix -c deadnix --fail .
 
@@ -159,6 +159,6 @@ jobs:
       - uses: nix-community/cache-nix-action@v7
         with:
           primary-key: nix-linux-lint-${{ hashFiles('flake.lock') }}
-          restore-keys: nix-linux-lint-
+          restore-prefixes-first-match: nix-linux-lint-
           gc-max-store-size-linux: 1073741824
       - run: nix shell nixpkgs#markdownlint-cli -c markdownlint 'docs/**/*.md'
