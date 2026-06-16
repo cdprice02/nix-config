@@ -32,7 +32,7 @@ jobs:
           LINUX=$(nix eval .#homeConfigurations --apply builtins.attrNames --json --impure)
           echo "linux=$LINUX" >> "$GITHUB_OUTPUT"
           DARWIN=$(nix eval .#darwinConfigurations --apply builtins.attrNames --json --impure \
-            | jq -c '[.[] | {config: ., runner: (if endswith("-aarch64") then "macos-14" else "macos-13" end)}]')
+            | jq -c '[.[] | {config: .}]')
           echo "darwin=$DARWIN" >> "$GITHUB_OUTPUT"
 
   # ── nix flake check + validate the example identity file ─────────────────────
@@ -72,20 +72,24 @@ jobs:
       - run: nix build .#homeConfigurations.${{ matrix.profile }}.activationPackage --impure
 
   # ── Full system build for every Darwin profile ────────────────────────────────
-  # Uses GitHub-hosted macOS runners (free for public repos, no minute cap).
-  # macos-14 = Apple Silicon (aarch64), macos-13 = Intel (x86_64).
+  # All builds run on macos-14 (Apple Silicon). x86_64-darwin configs are built
+  # via Rosetta 2 using extra-platforms = x86_64-darwin — same pattern as QEMU
+  # for aarch64-linux. macos-13 (Intel) runners are deprecated and unavailable.
   build-darwin:
     needs: get-profiles
+    runs-on: macos-14
     strategy:
       fail-fast: false
       matrix:
         include: ${{ fromJSON(needs.get-profiles.outputs.darwin) }}
-    runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v6
         with:
           submodules: recursive
       - uses: DeterminateSystems/nix-installer-action@v22
+        with:
+          extra-conf: |
+            extra-platforms = x86_64-darwin
       - uses: DeterminateSystems/magic-nix-cache-action@v14
       - run: mkdir -p "$HOME/.nix-config" && cp user.nix.example "$HOME/.nix-config/user.nix"
       - run: nix build .#darwinConfigurations.${{ matrix.config }}.system --impure
