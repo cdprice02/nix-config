@@ -75,6 +75,8 @@ jobs:
   # All builds run on macos-14 (Apple Silicon). x86_64-darwin configs are built
   # via Rosetta 2 using extra-platforms = x86_64-darwin — same pattern as QEMU
   # for aarch64-linux. macos-13 (Intel) runners are deprecated and unavailable.
+  # magic-nix-cache is omitted: its proxy daemon conflicts with the Nix daemon
+  # on macOS runners; cache.nixos.org is used directly instead.
   build-darwin:
     needs: get-profiles
     runs-on: macos-14
@@ -90,7 +92,6 @@ jobs:
         with:
           extra-conf: |
             extra-platforms = x86_64-darwin
-      - uses: DeterminateSystems/magic-nix-cache-action@v14
       - run: mkdir -p "$HOME/.nix-config" && cp user.nix.example "$HOME/.nix-config/user.nix"
       - run: nix build .#darwinConfigurations.${{ matrix.config }}.system --impure
 
