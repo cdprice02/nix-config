@@ -52,7 +52,7 @@ sudo darwin-rebuild switch --flake ~/.nix-config#personal-darwin --impure
 | Task | Command |
 |------|---------|
 | Apply config (Linux) | `nix-sw` → `home-manager switch --flake ~/.nix-config#<profile> --impure` |
-| Apply config (Mac) | `nix-rb` → `sudo darwin-rebuild switch --flake ~/.nix-config` |
+| Apply config (Mac) | `nix-rb` → `sudo darwin-rebuild switch --flake ~/.nix-config#<profile> --impure` |
 | Update flake inputs | `nix-up` → `nix flake update --flake ~/.nix-config` |
 
 ## Profiles

@@ -8,13 +8,17 @@ Common first-boot failures and how to fix them.
 
 **Symptom:** `nix flake` or `home-manager switch` errors with something like:
 
-```
+```text
 error: … builtins.getEnv "HOME" evaluated to ""
 ```
 
-**Fix:** Every `home-manager switch` and `darwin-rebuild switch` requires `--impure`:
+**Fix:** Every `home-manager switch` and `darwin-rebuild switch` requires `--impure`. At first bootstrap, `home-manager` may not be on PATH yet — use the `nix run` form:
 
 ```sh
+# First bootstrap (home-manager not yet on PATH)
+nix run home-manager -- switch --flake ~/.nix-config#<profile> --impure
+
+# Subsequent applies
 home-manager switch --flake ~/.nix-config#<profile> --impure
 sudo darwin-rebuild switch --flake ~/.nix-config#<profile> --impure
 ```
@@ -47,7 +51,7 @@ git clone --recurse-submodules git@github.com:cdprice02/nix-config.git ~/.nix-co
 
 **Symptom:** During `home-manager switch`, the activation script prints:
 
-```
+```text
 WARNING: submodule claude: fetch from private remote failed.
   Ensure your SSH key is added to GitHub, then rerun: home-manager switch --flake ~/.nix-config --impure
 ```
@@ -87,7 +91,7 @@ If you have config in `~/.claude.bk` you want to keep, merge it into `~/.nix-con
 
 **Symptom:** SSL errors from curl, AWS CLI, Python requests, or npm after applying a `work` profile. The activation script also warns:
 
-```
+```text
 WARNING: ~/.certs/corporate.pem not found — see docs/bootstrap.md
 ```
 

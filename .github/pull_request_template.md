@@ -5,8 +5,8 @@
 ## Checklist
 
 - [ ] `just check` passes (`nix flake check --impure`)
-- [ ] `pre-commit run --all-files` clean (alejandra, statix, deadnix, markdownlint)
-- [ ] This is a framework improvement, not a personal preference (see [CONTRIBUTING.md](CONTRIBUTING.md))
+- [ ] `pre-commit run --all-files` clean (alejandra, markdownlint, secrets scan)
+- [ ] This is a framework improvement, not a personal preference (see [CONTRIBUTING.md](../CONTRIBUTING.md))
 - [ ] Docs updated if the change affects bootstrap, profile selection, or module composition
 
 ## Related issues

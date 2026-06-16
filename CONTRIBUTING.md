@@ -39,10 +39,10 @@ Before opening a PR, run:
 
 ```sh
 just check                    # nix flake check --impure
-pre-commit run --all-files    # alejandra, statix, deadnix, markdownlint
+pre-commit run --all-files    # alejandra, markdownlint, trailing whitespace, secrets scan
 ```
 
-Both must pass. CI runs the same checks plus full profile builds for all 16 Linux profiles and all Darwin profiles.
+Both must pass. CI additionally runs `statix` and `deadnix` (Nix linters not in pre-commit) and builds all 16 Linux profiles and all Darwin profiles — so a green pre-commit run does not guarantee a green CI run.
 
 ---
 
