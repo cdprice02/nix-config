@@ -24,8 +24,12 @@ jobs:
       - uses: actions/checkout@v6
         with:
           submodules: recursive
-      - uses: DeterminateSystems/nix-installer-action@v22
-      - uses: DeterminateSystems/magic-nix-cache-action@v14
+      - uses: cachix/install-nix-action@v31
+      - uses: nix-community/cache-nix-action@v7
+        with:
+          primary-key: nix-linux-eval-${{ hashFiles('flake.lock', '**/*.nix') }}
+          restore-keys: nix-linux-eval-
+          gc-max-store-size-linux: 2147483648
       - id: list
         run: |
           mkdir -p "$HOME/.nix-config" && cp user.nix.example "$HOME/.nix-config/user.nix"
@@ -42,13 +46,19 @@ jobs:
       - uses: actions/checkout@v6
         with:
           submodules: recursive
-      - uses: DeterminateSystems/nix-installer-action@v22
-      - uses: DeterminateSystems/magic-nix-cache-action@v14
+      - uses: cachix/install-nix-action@v31
+      - uses: nix-community/cache-nix-action@v7
+        with:
+          primary-key: nix-linux-eval-${{ hashFiles('flake.lock', '**/*.nix') }}
+          restore-keys: nix-linux-eval-
+          gc-max-store-size-linux: 2147483648
       - run: mkdir -p "$HOME/.nix-config" && cp user.nix.example "$HOME/.nix-config/user.nix"
       - run: nix flake check --impure
       - run: nix eval --file user.nix.example
 
   # ── Full activation-package build for every Linux profile (including aarch64) ─
+  # All 16 profiles share one cache key — profiles overlap heavily in store
+  # content, so separate keys would fragment the 10 GB GHA cache quota.
   build-linux:
     needs: get-profiles
     runs-on: ubuntu-latest
@@ -63,11 +73,15 @@ jobs:
       - uses: docker/setup-qemu-action@v4
         with:
           platforms: arm64
-      - uses: DeterminateSystems/nix-installer-action@v22
+      - uses: cachix/install-nix-action@v31
         with:
-          extra-conf: |
+          extra_nix_config: |
             extra-platforms = aarch64-linux
-      - uses: DeterminateSystems/magic-nix-cache-action@v14
+      - uses: nix-community/cache-nix-action@v7
+        with:
+          primary-key: nix-linux-build-${{ hashFiles('flake.lock', '**/*.nix') }}
+          restore-keys: nix-linux-build-
+          gc-max-store-size-linux: 4294967296
       - run: mkdir -p "$HOME/.nix-config" && cp user.nix.example "$HOME/.nix-config/user.nix"
       - run: nix build .#homeConfigurations.${{ matrix.profile }}.activationPackage --impure
 
@@ -75,8 +89,6 @@ jobs:
   # All builds run on macos-14 (Apple Silicon). x86_64-darwin configs are built
   # via Rosetta 2 using extra-platforms = x86_64-darwin — same pattern as QEMU
   # for aarch64-linux. macos-13 (Intel) runners are deprecated and unavailable.
-  # magic-nix-cache is omitted: its proxy daemon conflicts with the Nix daemon
-  # on macOS runners; cache.nixos.org is used directly instead.
   build-darwin:
     needs: get-profiles
     runs-on: macos-14
@@ -88,42 +100,65 @@ jobs:
       - uses: actions/checkout@v6
         with:
           submodules: recursive
-      - uses: DeterminateSystems/nix-installer-action@v22
+      - uses: cachix/install-nix-action@v31
         with:
-          extra-conf: |
+          extra_nix_config: |
             extra-platforms = x86_64-darwin
+      - uses: nix-community/cache-nix-action@v7
+        with:
+          primary-key: nix-macos-build-${{ hashFiles('flake.lock', '**/*.nix') }}
+          restore-keys: nix-macos-build-
+          gc-max-store-size-macos: 4294967296
       - run: mkdir -p "$HOME/.nix-config" && cp user.nix.example "$HOME/.nix-config/user.nix"
       - run: nix build .#darwinConfigurations.${{ matrix.config }}.system --impure
 
   # ── Lint: each tool is a separate job so failures are individually named ──────
+  # All lint jobs share one cache key — they all pull from the same nixpkgs
+  # revision, so their store content overlaps almost entirely.
   lint-alejandra:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: DeterminateSystems/nix-installer-action@v22
-      - uses: DeterminateSystems/magic-nix-cache-action@v14
+      - uses: cachix/install-nix-action@v31
+      - uses: nix-community/cache-nix-action@v7
+        with:
+          primary-key: nix-linux-lint-${{ hashFiles('flake.lock') }}
+          restore-keys: nix-linux-lint-
+          gc-max-store-size-linux: 1073741824
       - run: nix shell nixpkgs#alejandra -c alejandra --check .
 
   lint-statix:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: DeterminateSystems/nix-installer-action@v22
-      - uses: DeterminateSystems/magic-nix-cache-action@v14
+      - uses: cachix/install-nix-action@v31
+      - uses: nix-community/cache-nix-action@v7
+        with:
+          primary-key: nix-linux-lint-${{ hashFiles('flake.lock') }}
+          restore-keys: nix-linux-lint-
+          gc-max-store-size-linux: 1073741824
       - run: nix shell nixpkgs#statix -c statix check
 
   lint-deadnix:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: DeterminateSystems/nix-installer-action@v22
-      - uses: DeterminateSystems/magic-nix-cache-action@v14
+      - uses: cachix/install-nix-action@v31
+      - uses: nix-community/cache-nix-action@v7
+        with:
+          primary-key: nix-linux-lint-${{ hashFiles('flake.lock') }}
+          restore-keys: nix-linux-lint-
+          gc-max-store-size-linux: 1073741824
       - run: nix shell nixpkgs#deadnix -c deadnix --fail .
 
   lint-markdownlint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: DeterminateSystems/nix-installer-action@v22
-      - uses: DeterminateSystems/magic-nix-cache-action@v14
+      - uses: cachix/install-nix-action@v31
+      - uses: nix-community/cache-nix-action@v7
+        with:
+          primary-key: nix-linux-lint-${{ hashFiles('flake.lock') }}
+          restore-keys: nix-linux-lint-
+          gc-max-store-size-linux: 1073741824
       - run: nix shell nixpkgs#markdownlint-cli -c markdownlint 'docs/**/*.md'
